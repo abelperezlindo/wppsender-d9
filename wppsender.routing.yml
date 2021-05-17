@@ -1,0 +1,9 @@
+wppsender.admin_settings_form:
+  path: '/admin/config/wppsender'
+  defaults:
+    _form: '\Drupal\wppsender\Form\WppsenderSettingForm'
+    _title: 'Whatsapp Sender API Cnfiguration'
+  requirements:
+    _permission: 'administer site configuration'
+  options:  
+    _admin_route: TRUE

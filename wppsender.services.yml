@@ -1,0 +1,3 @@
+services:
+  wppsender.sender:
+    class: Drupal\wppsender\Service\WhatsappSender
