@@ -79,22 +79,35 @@ class WppsenderSettingForm extends ConfigFormBase  implements FormInterface{
       '#title' => $this->t('Port'),
       '#required' => true,
       '#default_value' => $config->get('port'),
-
     ];
 
-    if($config->get('host') && $config->get('port')){
-      $form['test_connection'] = [
+    if($config->get('connected')){
+      $cron = $this->getCronStatus();
+
+      if($cron){
+        $form['stop cron'] = [
+          '$preffix' => '<label>Cron está activo</label>',
+          '#type' => 'submit',
+          '#value' => 'Stop cron',
+          '#name' => 'Stop cron',
+          '#submit' => ['::stopCron'],
+        ]; 
+      } else {
+        $form['start cron'] = [
+          '$preffix' => '<label>Cron está inactivo</label>',
+          '#type' => 'submit',
+          '#value' => 'Start cron',
+          '#name' => 'start cron',
+          '#submit' => ['::startCron'],
+        ]; 
+      }
+     
+      $form['get new session'] = [
         '#type' => 'submit',
-        '#value' => 'Test connection',
-        '#name' => 'test_connection',
-        '#submit' => ['::testConection'],
-      ];
-      $form['new_session'] = [
-        '#type' => 'submit',
-        '#value' => 'New Session',
-        '#name' => 'new_session',
+        '#value' => 'Get Cron Status',
+        '#name' => 'get_cron_status',
         '#submit' => ['::getQr'],
-      ];      
+      ];
     }
 
     return parent::buildForm($form, $form_state);
@@ -104,23 +117,38 @@ class WppsenderSettingForm extends ConfigFormBase  implements FormInterface{
    * {@inheritdoc}
   */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-  
+    $connected = false;
+    $host = $form_state->getValue('host');
+    $port = $form_state->getValue('port');
+
     $this->config('wppsender.settings')
-      ->set('host', $form_state->getValue('host'))
-      ->set('port', $form_state->getValue('port'))
+      ->set('host', $port)
+      ->set('port', $port)
+      ->set('connected', $connected)
       ->save();
+
     parent::submitForm($form, $form_state);
-  }
-  public function testConection(){
     $status = $this->wpp->getApiStatus();
     if($status){
       $this->messenger->addStatus('Connectado');
+      
     } else {
       $this->messenger->addStatus('No connectado');
+      $this->config('wppsender.settings')->set('coneccted', $connected)->save();
     }
+
   }
 
   public function getQr(){
     $qr = $this->wpp->addNewSession();
+  }
+  public function getCronStatus(){
+    return true;
+  }
+  public function startCron(){
+    return true;
+  }
+  public function stopCron(){
+    return true;
   }
 }

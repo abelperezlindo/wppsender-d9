@@ -56,4 +56,69 @@ class WhatsappSender {
             return false;
         }
     }
+    /** @todo get cron status from api */
+    public function getCronStatus(){
+        $url = $this->getUrl() . '/cron';
+
+        $client = \Drupal::httpClient();
+        try {
+            $response = $client->get($url);
+            $code = $response->getStatusCode();
+            if($code == 200){
+                $this->status = true;
+                return true;
+            }
+        }
+        catch (RequestException $e) {
+            $mensaje = $e;
+            return false;
+        }
+    }
+    /** @todo get cron status from api */
+    public function startCron($estatus){
+
+
+        $cronStatus = $this->getCronStatus();
+        if($cronStatus) return true; // Ya esta start
+        $url = $this->getUrl() . '/cron/start';
+     
+        $client = \Drupal::httpClient();
+        
+        try {
+            $response = $client->get($url);
+            $code = $response->getStatusCode();
+            if($code == 200){
+                $this->status = true;
+                return true;
+            }
+        }
+        catch (RequestException $e) {
+            $mensaje = $e;
+            return false;
+        }
+
+    }
+    public function stopCron(){
+
+        $cronStatus = $this->getCronStatus();
+        if(!$cronStatus) return true; // Ya esta stop
+        $url = $this->getUrl() . '/cron/stop';
+     
+        $client = \Drupal::httpClient();
+        try {
+            $response = $client->get($url);
+            $code = $response->getStatusCode();
+            if($code == 200){
+                $this->status = true;
+                return true;
+            }
+        }
+        catch (RequestException $e) {
+            $mensaje = $e;
+            return false;
+        }
+    }
+    protected function getUrl(){
+        return 'http://' . $this->host . ':' . $this->port;
+    }
 }
