@@ -64,7 +64,7 @@ class WppsenderSettingForm extends ConfigFormBase  implements FormInterface{
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
     $config = $this->config('wppsender.settings');
-    
+    $connected = $config->get('connected');
     $form['container'] = [
       '#type' => 'container'
     ];
@@ -104,8 +104,8 @@ class WppsenderSettingForm extends ConfigFormBase  implements FormInterface{
      
       $form['get new session'] = [
         '#type' => 'submit',
-        '#value' => 'Get Cron Status',
-        '#name' => 'get_cron_status',
+        '#value' => 'Get New Session',
+        '#name' => 'get_session',
         '#submit' => ['::getQr'],
       ];
     }
@@ -117,38 +117,43 @@ class WppsenderSettingForm extends ConfigFormBase  implements FormInterface{
    * {@inheritdoc}
   */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    $connected = false;
     $host = $form_state->getValue('host');
     $port = $form_state->getValue('port');
 
     $this->config('wppsender.settings')
-      ->set('host', $port)
+      ->set('host', $host)
       ->set('port', $port)
-      ->set('connected', $connected)
+      ->set('connected', false)
       ->save();
 
-    parent::submitForm($form, $form_state);
+    
     $status = $this->wpp->getApiStatus();
     if($status){
       $this->messenger->addStatus('Connectado');
-      
+      $this->config('wppsender.settings')->set('connected', true)->save();
     } else {
       $this->messenger->addStatus('No connectado');
-      $this->config('wppsender.settings')->set('coneccted', $connected)->save();
     }
+    parent::submitForm($form, $form_state);
 
   }
 
   public function getQr(){
-    $qr = $this->wpp->addNewSession();
+    $data = $this->wpp->addNewSession();
+    if($data !== false) {
+      $this->messenger->addStatus($data);
+    }
   }
   public function getCronStatus(){
-    return true;
+    $status = $this->wpp->getCronStatus();
+    return $status;
   }
   public function startCron(){
-    return true;
+    $status = $this->wpp->startCron();
+    return $status;
   }
   public function stopCron(){
-    return true;
+    $status = $this->wpp->stopCron();
+    return $status;
   }
 }

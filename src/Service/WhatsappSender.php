@@ -5,6 +5,7 @@ namespace Drupal\wppsender\Service;
 //use Drupal\wppsender\Service\RequestException;
 //\GuzzleHttp\Exception\RequestException
 use GuzzleHttp\Exception\RequestException;
+use Zend\Diactoros\Response\EmptyResponse;
 
 class WhatsappSender {
     protected $status;
@@ -21,16 +22,15 @@ class WhatsappSender {
     }
  
     public function getApiStatus(){
+        if(empty($this->host) || empty($this->port)){
+            return false;
+        }
         $url = 'http://' . $this->host . ':' . $this->port;
         $client = \Drupal::httpClient();
         try {
             $response = $client->get($url);
-            $data = $response->getBody();
             $code = $response->getStatusCode();
-            if($code == 200){
-                $this->status = true;
-                return true;
-            }
+            return ($code == 200);
         }
         catch (RequestException $e) {
             $mensaje = $e;
@@ -38,85 +38,53 @@ class WhatsappSender {
         }
     }
     public function addNewSession(){
-        $url = 'http://' . $this->host . ':' . $this->port . '/qr';
+        $url = $this->getUrl() . '/session/qr';
 
-        $client = \Drupal::httpClient();
-        //$client->setPort()
-        try {
-            $response = $client->get($url);
-            $code = $response->getStatusCode();
-            $json = $response->json();
-            if($code == 200){
-                $this->status = true;
-                return true;
-            }
-        }
-        catch (RequestException $e) {
-            $mensaje = $e;
-            return false;
-        }
+        $response = \Drupal::httpClient()
+        ->get($url, []);
+        $code = $response->getStatusCode();
+        if($code !== 200) return '';
+        $json_string = (string) $response->getBody();
+        $body = json_decode($json_string);
+        return $body->qr;
     }
     /** @todo get cron status from api */
     public function getCronStatus(){
         $url = $this->getUrl() . '/cron';
-
-        $client = \Drupal::httpClient();
-        try {
-            $response = $client->get($url);
-            $code = $response->getStatusCode();
-            if($code == 200){
-                $this->status = true;
-                return true;
-            }
-        }
-        catch (RequestException $e) {
-            $mensaje = $e;
-            return false;
-        }
+        $response = \Drupal::httpClient()
+        ->get($url, []);
+        $code = $response->getStatusCode();
+        if($code !== 200) return '';
+        $json_string = (string) $response->getBody();
+        $body = json_decode($json_string);
+        return $body->cronStatus;
     }
     /** @todo get cron status from api */
-    public function startCron($estatus){
-
+    public function startCron(){
 
         $cronStatus = $this->getCronStatus();
         if($cronStatus) return true; // Ya esta start
         $url = $this->getUrl() . '/cron/start';
-     
-        $client = \Drupal::httpClient();
-        
-        try {
-            $response = $client->get($url);
-            $code = $response->getStatusCode();
-            if($code == 200){
-                $this->status = true;
-                return true;
-            }
-        }
-        catch (RequestException $e) {
-            $mensaje = $e;
-            return false;
-        }
+        $response = \Drupal::httpClient()
+        ->get($url, []);
+        $code = $response->getStatusCode();
+        if($code !== 200) return '';
+        $json_string = (string) $response->getBody();
+        $body = json_decode($json_string);
+        return $body->cronStatus;
 
     }
     public function stopCron(){
-
         $cronStatus = $this->getCronStatus();
-        if(!$cronStatus) return true; // Ya esta stop
-        $url = $this->getUrl() . '/cron/stop';
-     
-        $client = \Drupal::httpClient();
-        try {
-            $response = $client->get($url);
-            $code = $response->getStatusCode();
-            if($code == 200){
-                $this->status = true;
-                return true;
-            }
-        }
-        catch (RequestException $e) {
-            $mensaje = $e;
-            return false;
-        }
+        if(!$cronStatus) return true; // Ya esta start
+        $url = $this->getUrl() . '/cron/start';
+        $response = \Drupal::httpClient()
+        ->get($url, []);
+        $code = $response->getStatusCode();
+        if($code !== 200) return '';
+        $json_string = (string) $response->getBody();
+        $body = json_decode($json_string);
+        return $body->cronStatus;
     }
     protected function getUrl(){
         return 'http://' . $this->host . ':' . $this->port;
